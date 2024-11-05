@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Image</title>
+</head>
+<body>
+    <h1>Generate Visual Guide</h1>
+    <form action="/generate" method="post">
+        <label for="text">Enter text for image generation:</label><br>
+        <input type="text" id="text" name="text"><br><br>
+        <input type="submit" value="Generate Image">
+    </form>
+
+    {% if summarized_text %}
+        <h2>Summarized Text:</h2>
+        <p>{{ summarized_text }}</p>
+    {% endif %}
+
+    {% if image_url %}
+        <h2>Generated Image:</h2>
+        <img src="{{ image_url }}" alt="Generated Image" style="width:400px;height:auto;">
+    {% endif %}
+
+    {% if error %}
+        <p style="color:red;">{{ error }}</p>
+    {% endif %}
+</body>
+</html>
