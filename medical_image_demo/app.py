@@ -148,11 +148,6 @@ def generate():
 if __name__ == '__main__':
     app.run(debug=True)
 
-def example_function():
-    """This is an example function that prints a greeting message."""
-    print("Hello from the example function! This function doesn't affect the main code.")
-
-
 # Send the cleaned text to the image generation API
 #image_url = generate_image_from_text(cleaned_text)
 #if image_url:
