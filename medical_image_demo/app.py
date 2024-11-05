@@ -11,7 +11,7 @@ import os
 from openai import OpenAI
 
 app = Flask(__name__)
-
+# Hello
 
 # Add this line before you call any pytesseract functions
 pytesseract.pytesseract.tesseract_cmd = '/opt/homebrew/bin/tesseract'
