@@ -6,12 +6,17 @@ import re
 import os
 import pytesseract
 from flask import Flask, render_template, request
+from PyPDF2 import PdfReader
 import requests
 import os
 from openai import OpenAI
 
 app = Flask(__name__)
-# Hello
+
+# Ensure upload folder exists
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Add this line before you call any pytesseract functions
 pytesseract.pytesseract.tesseract_cmd = '/opt/homebrew/bin/tesseract'
@@ -44,6 +49,7 @@ pil_image = Image.fromarray(gray)
 # Use pytesseract to do OCR on the image
 text = pytesseract.image_to_string(pil_image)
 
+# Print the extracted text
 print("Extracted Text:")
 print(text)
 
@@ -64,9 +70,11 @@ with open('output_description.txt', 'w') as file:
 
 # Function to summarize text using OpenAI API
 def summarize_text(text):
+    #api_key = "sk"
+    api_key ="insert your api key"
     api_endpoint = "https://api.openai.com/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     # Simplified format for image-ready summarization
@@ -102,8 +110,7 @@ def summarize_text(text):
         print(f"Error: {response.status_code}, {response.text}")
         return None
 
-
-
+'''
 # Function to send text to the image generation API
 def generate_image_from_text(text):
     # Replace with your actual API endpoint
@@ -125,7 +132,29 @@ def generate_image_from_text(text):
     else:
         print(f"Error: {response.status_code}, {response.text}")
         return None
+'''
+# Keyword extraction for image selection
+def extract_keywords(text):
+    # Simple keyword extraction based on common medical terms, dosage, etc.
+    keywords = re.findall(r'\b(dosage|frequency|apply|avoid|drink|once|daily|mg|tablet)\b', text.lower())
+    return list(set(keywords))
 
+# Select image based on keywords
+def select_image_based_on_keywords(keywords):
+    # Sample mapping of keywords to image filenames
+    image_map = {
+        "dosage": "static/images/output1.png",
+        "frequency": "static/images/output1.png",
+        "apply": "static/images/output2.png",
+        # Add more mappings as needed
+    }
+    for keyword in keywords:
+        if keyword in image_map:
+            return image_map[keyword]
+    return "static/images/output2.png"  # Fallback image
+
+
+''' 
 # Use sample text or get text from a form input in your HTML
 @app.route('/')
 def index():
@@ -133,17 +162,57 @@ def index():
 
 @app.route('/generate', methods=['POST'])
 def generate():
-    text = request.form.get('text') or "Sample text for image generation."
-    
-    # Summarize the cleaned text
+    text = request.form.get('text') or "Sample text for summarization."
     summarized_text = summarize_text(text)
     if summarized_text:
-        print("Summarized Text:", summarized_text)  # Print summarized text to the terminal
-        # Generate image from summarized text
-        image_url = generate_image_from_text(summarized_text)
+        keywords = extract_keywords(summarized_text)  # Extract keywords from summarized text
+        image_url = select_image_based_on_keywords(keywords)  # Select appropriate image based on keywords
         return render_template('index.html', image_url=image_url, summarized_text=summarized_text)
     else:
         return render_template('index.html', error="Failed to summarize text.")
+'''
+# Use sample text or get text from a form input in your HTML
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+# Handle form submission
+@app.route('/generate', methods=['POST'])
+def generate():
+    text_input = request.form.get('text')
+    file = request.files.get('file')
+
+    # Ensure text or file is provided
+    if not text_input and not file:
+        return render_template('index.html', error="Please provide either text or a PDF file.")
+
+    # Handle PDF input
+    if file and file.filename.endswith('.pdf'):
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(filepath)
+
+        try:
+            pdf_reader = PdfReader(filepath)
+            pdf_text = ""
+            for page in pdf_reader.pages:
+                pdf_text += page.extract_text()
+            input_text = pdf_text
+        except Exception as e:
+            return render_template('index.html', error="Failed to extract text from PDF.")
+    else:
+        # Use text input if provided
+        input_text = text_input
+
+    # Summarize the text
+    summarized_text = summarize_text(input_text)
+    if summarized_text:
+        keywords = extract_keywords(summarized_text)  # Extract keywords from summarized text
+        image_url = select_image_based_on_keywords(keywords)  # Select appropriate image based on keywords
+        return render_template('index.html', image_url=image_url, summarized_text=summarized_text)
+    else:
+        return render_template('index.html', error="Failed to summarize text.")
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

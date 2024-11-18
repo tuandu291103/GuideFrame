@@ -4,23 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generate Image</title>
+    <style>
+        .large-image {
+            width: 800px;
+            height: auto;
+        }
+    </style>
 </head>
 <body>
     <h1>Generate Visual Guide</h1>
-    <form action="/generate" method="post">
+
+    <form action="/generate" method="post" enctype="multipart/form-data">
         <label for="text">Enter text for image generation:</label><br>
-        <input type="text" id="text" name="text"><br><br>
+        <textarea id="text" name="text" rows="4" cols="50" placeholder="Enter text here..."></textarea><br><br>
+        <label for="file">Or upload a PDF:</label><br>
+        <input type="file" id="file" name="file" accept=".pdf"><br><br>
         <input type="submit" value="Generate Image">
     </form>
 
     {% if summarized_text %}
         <h2>Summarized Text:</h2>
-        <p>{{ summarized_text }}</p>
+        <p>
+            {{ summarized_text.replace('\n', '<br>') | safe }}
+        </p>
     {% endif %}
 
     {% if image_url %}
         <h2>Generated Image:</h2>
-        <img src="{{ image_url }}" alt="Generated Image" style="width:400px;height:auto;">
+        <img src="{{ url_for('static', filename=image_url.split('static/')[-1]) }}" alt="Generated Image" class="large-image">
     {% endif %}
 
     {% if error %}
